@@ -24,21 +24,24 @@ impl Register {
     }
 }
 
+#[derive(Clone, Copy)]
 enum Operand {
     Num(isize),
     Register(Register),
 }
 
+#[derive(Clone, Copy)]
 enum Instruction {
-    Cpy(Operand, Register),
+    Cpy(Operand, Operand),
     Inc(Register),
     Dec(Register),
     Jnz(Operand, Operand),
+    Tgl(Register),
 }
 
 fn main() {
-    let mut registers = [0, 0, 0, 0];
-    let instructions = include_str!(r"..\..\input\day12.txt")
+    let mut registers = [7, 0, 0, 0];
+    let mut instructions = include_str!(r"..\..\input\day23.txt")
         .lines()
         .map(|line| {
             let (instruction, operand) = line.split_once(' ').unwrap();
@@ -50,7 +53,7 @@ fn main() {
                     Instruction::Cpy(
                         src.parse::<isize>()
                             .map_or_else(|_| Operand::Register(Register::parse(src)), Operand::Num),
-                        Register::parse(dst),
+                        Operand::Register(Register::parse(dst)),
                     )
                 }
                 "inc" => Instruction::Inc(Register::parse(operand)),
@@ -68,6 +71,7 @@ fn main() {
                         ),
                     )
                 }
+                "tgl" => Instruction::Tgl(Register::parse(operand)),
                 _ => unreachable!(),
             }
         })
@@ -83,7 +87,10 @@ fn main() {
                     Operand::Register(reg) => registers[reg.idx()],
                 };
 
-                registers[dst.idx()] = src;
+                if let Operand::Register(dst) = dst {
+                    registers[dst.idx()] = src;
+                };
+
                 index += 1;
             }
 
@@ -113,6 +120,24 @@ fn main() {
                 } else {
                     index += 1;
                 }
+            }
+
+            Instruction::Tgl(reg) => {
+                let toggled_index = index.checked_add_signed(registers[reg.idx()]).unwrap();
+
+                if let Some(instruction) = instructions.get_mut(toggled_index) {
+                    *instruction = match *instruction {
+                        Instruction::Dec(a) | Instruction::Tgl(a) => Instruction::Inc(a),
+
+                        Instruction::Inc(a) => Instruction::Dec(a),
+
+                        Instruction::Cpy(a, b) => Instruction::Jnz(a, b),
+
+                        Instruction::Jnz(a, b) => Instruction::Cpy(a, b),
+                    }
+                }
+
+                index += 1;
             }
         }
     }

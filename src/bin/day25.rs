@@ -34,11 +34,11 @@ enum Instruction {
     Inc(Register),
     Dec(Register),
     Jnz(Operand, Operand),
+    Out(Register),
 }
 
 fn main() {
-    let mut registers = [0, 0, 0, 0];
-    let instructions = include_str!(r"..\..\input\day12.txt")
+    let instructions = include_str!(r"..\..\input\day25.txt")
         .lines()
         .map(|line| {
             let (instruction, operand) = line.split_once(' ').unwrap();
@@ -55,6 +55,7 @@ fn main() {
                 }
                 "inc" => Instruction::Inc(Register::parse(operand)),
                 "dec" => Instruction::Dec(Register::parse(operand)),
+                "out" => Instruction::Out(Register::parse(operand)),
                 "jnz" => {
                     let (condition, offset) = operand.split_once(' ').unwrap();
                     Instruction::Jnz(
@@ -73,51 +74,61 @@ fn main() {
         })
         .collect_vec();
 
-    let mut index = 0;
+    for a in 0.. {
+        let mut registers = [a, 0, 0, 0];
+        let mut index = 0;
 
-    while let Some(instruction) = instructions.get(index) {
-        match instruction {
-            Instruction::Cpy(src, dst) => {
-                let src = match src {
-                    Operand::Num(value) => *value,
-                    Operand::Register(reg) => registers[reg.idx()],
-                };
+        let mut expected_output = [0, 1].iter().copied().cycle();
+        dbg!(a);
 
-                registers[dst.idx()] = src;
-                index += 1;
-            }
+        while let Some(instruction) = instructions.get(index) {
+            match instruction {
+                Instruction::Cpy(src, dst) => {
+                    let src = match src {
+                        Operand::Num(value) => *value,
+                        Operand::Register(reg) => registers[reg.idx()],
+                    };
 
-            Instruction::Dec(operand) => {
-                registers[operand.idx()] -= 1;
-                index += 1;
-            }
+                    registers[dst.idx()] = src;
+                    index += 1;
+                }
 
-            Instruction::Inc(operand) => {
-                registers[operand.idx()] += 1;
-                index += 1;
-            }
+                Instruction::Dec(operand) => {
+                    registers[operand.idx()] -= 1;
+                    index += 1;
+                }
 
-            Instruction::Jnz(cond, offset) => {
-                let cond = match cond {
-                    Operand::Num(value) => *value != 0,
-                    Operand::Register(reg) => registers[reg.idx()] != 0,
-                };
+                Instruction::Inc(operand) => {
+                    registers[operand.idx()] += 1;
+                    index += 1;
+                }
 
-                let offset = match offset {
-                    Operand::Num(value) => *value,
-                    Operand::Register(reg) => registers[reg.idx()],
-                };
+                Instruction::Jnz(cond, offset) => {
+                    let cond = match cond {
+                        Operand::Num(value) => *value != 0,
+                        Operand::Register(reg) => registers[reg.idx()] != 0,
+                    };
 
-                if cond {
-                    index = index.checked_add_signed(offset).unwrap();
-                } else {
+                    let offset = match offset {
+                        Operand::Num(value) => *value,
+                        Operand::Register(reg) => registers[reg.idx()],
+                    };
+
+                    if cond {
+                        index = index.checked_add_signed(offset).unwrap();
+                    } else {
+                        index += 1;
+                    }
+                }
+
+                Instruction::Out(reg) => {
+                    if expected_output.next().unwrap() != registers[reg.idx()] {
+                        break;
+                    }
+
                     index += 1;
                 }
             }
         }
     }
-
-    let a = registers[Register::A.idx()];
-
-    dbg!(a);
 }

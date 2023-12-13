@@ -109,7 +109,7 @@ fn main() {
                 };
 
                 if cond {
-                    index = index.wrapping_add_signed(offset);
+                    index = index.checked_add_signed(offset).unwrap();
                 } else {
                     index += 1;
                 }
