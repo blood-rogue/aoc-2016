@@ -7,7 +7,7 @@ fn main() {
     let mut i = 1;
 
     while i * 3 < n {
-        i *= 3
+        i *= 3;
     }
 
     let winner = n - i;

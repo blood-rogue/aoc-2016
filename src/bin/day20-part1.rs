@@ -15,7 +15,7 @@ fn main() {
 
     for (start, end) in ranges {
         if (start..=end).contains(&min) {
-            min = end + 1
+            min = end + 1;
         }
     }
 
